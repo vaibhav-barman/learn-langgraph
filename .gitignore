@@ -1,0 +1,33 @@
+# Environment variables & API keys (CRITICAL for Gemini/LangSmith keys)
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Local databases & LangGraph checkpointing / memory
+*.db
+*.sqlite
+*.sqlite3
+.langgraph_api/
+
+# Jupyter Notebooks (very common when testing LangGraph flows)
+.ipynb_checkpoints/
+
+# IDEs & OS files (macOS / VS Code / Cursor)
+.DS_Store
+.vscode/
+.idea/
