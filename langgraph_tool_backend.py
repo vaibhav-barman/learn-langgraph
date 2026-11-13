@@ -4,6 +4,7 @@ from typing import Annotated, TypedDict
 
 import requests
 from dotenv import load_dotenv
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -17,6 +18,23 @@ load_dotenv()
 llm = ChatGoogleGenerativeAI(model='gemini-3.5-flash-lite')
 
 # Tools
+_ddg_search = DuckDuckGoSearchRun(region="us-en")
+
+@tool
+def duckduckgo_search(query: str) -> str:
+    """
+    Search the web with DuckDuckGo for current events, news and up-to-date information.
+    """
+    # ddgs picks a search engine at random, and individual engines fail intermittently
+    # (e.g. DNS errors), so retry a few times before giving up.
+    last_error = None
+    for _ in range(3):
+        try:
+            return _ddg_search.invoke(query)
+        except Exception as e:  # noqa: BLE001
+            last_error = e
+    return f"Search is currently unavailable: {last_error}"
+
 @tool
 def calculator(first_num: float, second_num: float, operation: str) -> dict:
     """
@@ -57,7 +75,7 @@ def get_stock_price(symbol: str) -> dict:
     return r.json()
 
 # Make tool list
-tools = [get_stock_price, calculator]
+tools = [get_stock_price, duckduckgo_search, calculator]
 
 # Make the LLM tool-aware
 llm_with_tools = llm.bind_tools(tools) 
