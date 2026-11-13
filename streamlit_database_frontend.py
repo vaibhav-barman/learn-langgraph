@@ -1,7 +1,7 @@
 import uuid
 
 import streamlit as st
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from langgraph_tool_backend import chatbot, retrieve_all_threads
 
@@ -61,10 +61,13 @@ for thread_id in st.session_state['chat_threads'][::-1]:
 
         temp_messages = []
         for msg in messages:
+            # skip ToolMessages and AI messages that only contain tool calls
             if isinstance(msg, HumanMessage):
-                role='human'
+                role = 'human'
+            elif isinstance(msg, AIMessage) and msg.text.strip():
+                role = 'ai'
             else:
-                role='ai'
+                continue
             temp_messages.append({'role': role, 'content': msg.text})
 
         st.session_state['message_history'] = temp_messages
