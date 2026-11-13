@@ -94,7 +94,9 @@ def chat_node(state: ChatState):
     # response stored to state
     return {'messages': [response]}
 
-tool_node = ToolNode(tools)
+# handle_tool_errors=True: a failing tool becomes an error ToolMessage the LLM can
+# respond to, instead of an exception that kills the whole run
+tool_node = ToolNode(tools, handle_tool_errors=True)
 
 
 # Checkpointer
