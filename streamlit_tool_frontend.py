@@ -1,7 +1,7 @@
 import uuid
 
 import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from langgraph_tool_backend import chatbot, retrieve_all_threads
 
@@ -97,18 +97,41 @@ if user_input:
 
     # Assistant streaming block
     with st.chat_message("assistant"):
+        # Use a mutable holder so the generator can set/modify it
+        status_holder = {"box": None}
+
         def ai_only_stream():
             for message_chunk, metadata in chatbot.stream(
                 {"messages": [HumanMessage(content=user_input)]},
                 config=CONFIG,
                 stream_mode="messages",
             ):
+                # Lazily create & update the SAME status container when any tool runs
+                if isinstance(message_chunk, ToolMessage):
+                    tool_name = getattr(message_chunk, "name", "tool")
+                    if status_holder["box"] is None:
+                        status_holder["box"] = st.status(
+                            f"🔧 Using `{tool_name}` …", expanded=True
+                        )
+                    else:
+                        status_holder["box"].update(
+                            label=f"🔧 Using `{tool_name}` …",
+                            state="running",
+                            expanded=True,
+                        )
+
                 # Stream ONLY assistant text tokens. Use .text (always a str): .content can be
                 # a list for Gemini, and st.write_stream renders non-strings (e.g. []) as JSON.
                 if isinstance(message_chunk, AIMessage) and message_chunk.text:
                     yield message_chunk.text
 
         ai_message = st.write_stream(ai_only_stream())
+
+        # Finalize only if a tool was actually used
+        if status_holder["box"] is not None:
+            status_holder["box"].update(
+                label="✅ Tool finished", state="complete", expanded=False
+            )
 
     # Save assistant message
     st.session_state["message_history"].append(
