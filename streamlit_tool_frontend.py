@@ -25,6 +25,16 @@ def load_conversation(thread_id):
     # Check if messages key exists in state values, return empty list if not
     return state.values.get("messages", [])
 
+def get_thread_title(thread_id, max_len=30):
+    """Title a thread by its first user message; None if the thread has no messages yet."""
+    for msg in load_conversation(thread_id):
+        if isinstance(msg, HumanMessage):
+            title = msg.text.strip()
+            if not title:
+                continue
+            return title if len(title) <= max_len else title[:max_len] + "..."
+    return None
+
 # ======================= Session Initialization ===================
 if "message_history" not in st.session_state:
     st.session_state["message_history"] = []
@@ -45,7 +55,12 @@ if st.sidebar.button("New Chat"):
 
 st.sidebar.header("My Conversations")
 for thread_id in st.session_state["chat_threads"][::-1]:
-    if st.sidebar.button(str(thread_id)):
+    title = get_thread_title(thread_id)
+    if title is None:
+        # empty thread: don't list it until it has a first message
+        continue
+    # key keeps buttons unique even when two threads start with the same message
+    if st.sidebar.button(title, key=str(thread_id)):
         st.session_state["thread_id"] = thread_id
         messages = load_conversation(thread_id)
 
@@ -99,3 +114,7 @@ if user_input:
     st.session_state["message_history"].append(
         {"role": "assistant", "content": ai_message}
     )
+
+    # first exchange in this thread: rerun so it shows up in the sidebar right away
+    if len(st.session_state["message_history"]) == 2:
+        st.rerun()
