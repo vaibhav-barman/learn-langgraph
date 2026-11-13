@@ -1,6 +1,8 @@
+import os
 import sqlite3
 from typing import Annotated, TypedDict
 
+import requests
 from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
@@ -40,8 +42,22 @@ def calculator(first_num: float, second_num: float, operation: str) -> dict:
         return {"error": str(e)}
 
 
+@tool
+def get_stock_price(symbol: str) -> dict:
+    """
+    Fetch latest stock price for a given symbol (e.g. 'AAPL', 'TSLA') 
+    using Alpha Vantage. The API key is read from the ALPHAVANTAGE_API_KEY env var.
+    """
+    api_key = os.getenv("ALPHAVANTAGE_API_KEY")
+    if not api_key:
+        return {"error": "ALPHAVANTAGE_API_KEY is not set"}
+    url = "https://www.alphavantage.co/query"
+    params = {"function": "GLOBAL_QUOTE", "symbol": symbol, "apikey": api_key}
+    r = requests.get(url, params=params)
+    return r.json()
+
 # Make tool list
-tools = [calculator]
+tools = [get_stock_price, calculator]
 
 # Make the LLM tool-aware
 llm_with_tools = llm.bind_tools(tools) 
