@@ -20,6 +20,9 @@ dist/
 
 # Local databases & LangGraph checkpointing / memory
 *.db
+chatbot.db
+chatbot.db-shm
+chatbot.db-wal
 *.sqlite
 *.sqlite3
 .langgraph_api/
