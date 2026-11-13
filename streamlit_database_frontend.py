@@ -1,9 +1,9 @@
 import uuid
 
 import streamlit as st
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 
-from langgraph_database_backend import chatbot, retrieve_all_threads
+from langgraph_tool_backend import chatbot, retrieve_all_threads
 
 
 # ******************************* Utility functions **********************************
@@ -61,10 +61,13 @@ for thread_id in st.session_state['chat_threads'][::-1]:
 
         temp_messages = []
         for msg in messages:
+            # skip ToolMessages and AI messages that only contain tool calls
             if isinstance(msg, HumanMessage):
-                role='human'
+                role = 'human'
+            elif isinstance(msg, AIMessage) and msg.text.strip():
+                role = 'ai'
             else:
-                role='ai'
+                continue
             temp_messages.append({'role': role, 'content': msg.text})
 
         st.session_state['message_history'] = temp_messages
@@ -98,10 +101,12 @@ if user_input:
         ai_message = st.write_stream(
             message_chunk.text for message_chunk, metadata in chatbot.stream({
                 'messages': [HumanMessage(content=user_input)]
-                }, 
+                },
                 config = CONFIG,
                 stream_mode='messages'
             )
+            # only stream the model's text, not raw ToolMessage results
+            if isinstance(message_chunk, AIMessageChunk)
         )
 
     st.session_state['message_history'].append({'role': 'assistant', 'content': ai_message})
