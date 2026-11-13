@@ -1,7 +1,7 @@
 import uuid
 
 import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 
 from langgraph_tool_backend import chatbot, retrieve_all_threads
 
@@ -101,10 +101,12 @@ if user_input:
         ai_message = st.write_stream(
             message_chunk.text for message_chunk, metadata in chatbot.stream({
                 'messages': [HumanMessage(content=user_input)]
-                }, 
+                },
                 config = CONFIG,
                 stream_mode='messages'
             )
+            # only stream the model's text, not raw ToolMessage results
+            if isinstance(message_chunk, AIMessageChunk)
         )
 
     st.session_state['message_history'].append({'role': 'assistant', 'content': ai_message})
